@@ -10,6 +10,11 @@ sender_email = os.environ['SENDER_EMAIL']
 receiver_email = os.environ['RECEIVER_EMAIL']
 password = os.environ['GMAIL_PASSWORD']
 
+# 模擬使用者發出的 HTTP GET 請求到伺服器端獲取網頁內容
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+}
+
 # 目標網頁的 URL
 url = 'https://www.yzu.edu.tw/index.php/tw'
 url_page = url[:url.find('/', url.find('//') + 2)]

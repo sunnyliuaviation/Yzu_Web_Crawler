@@ -13,6 +13,8 @@
 2. 將抓取下來的公告儲存到 Google Sheet 中，以便在下次抓取公告時，透過比對 URL 來確認該公告是否已經抓取。
 3. 經比對後，已抓取過的公告不再抓取；未抓取過的公告則儲存到 Google Sheet 中，並使用 Gmail 傳送到自己的信箱。
 ## 製作步驟
+### 程式設計邏輯
+![image](https://github.com/sunnyliuaviation/Yzu_Web_Crawler/blob/main/image/flow%20chart.png)
 ### Step 1: 設置環境
 1. 使用 Visual Studio Code ，Python 版本為3.11.8
 2. 安裝套件

@@ -1,15 +1,151 @@
+## 研究動機
+隨著訊息化時代的到來，網絡資訊的更新速度日益加快，學校及各行政單位的公告、通知和最新消息通常都會在官網上發佈。對於我身為學生而言，定期查閱這些最新的重要資訊是非常重要的。然而，由於資訊更新頻繁，若依賴手動查詢，不僅耗費大量時間與精力，也容易錯過關鍵的訊息，因此想製作一個網頁爬蟲來抓取最新消息。  
 ## 製作目的  
-透過自動化定期抓取元智大學官網上的最新消息和公告，減少手動查詢的時間和精力，了解學校的最新動態。 
+* **自動化**：每天自動抓取元智大學首頁的公告，節省手動查詢時間。
+* **儲存資料**：將公告的標題、連結、日期儲存到 Google Sheets，以避免重複抓取。
+* **郵件通知**：發現新公告後，自動寄送通知郵件給自己。
+## 爬蟲重點
+1. 抓取元智大學首頁的訊息公告。路徑: 元智大學首頁 → 最新消息 → 公告。
+2. 將抓取下來的公告儲存到 Google Sheet 中，以便在下次抓取公告時，透過比對 URL 來確認該公告是否已經抓取。
+3. 經比對後，已抓取過的公告不再抓取；未抓取過的公告則儲存到 Google Sheet 中，並使用 Gmail 傳送到自己的信箱。
+## 製作步驟
+### Step 1: 設置環境
+1. 使用 Visual Studio Code ，Python 版本為3.11.8
+2. 安裝套件
+   ```python
+   pip install requests beautifulsoup4 smtplib gspread oauth2client
+   ```
+   這些套件分別用來:
+   * <code>requests</code>：發送 HTTP 請求
+   * <code>beautifulsoup4</code>：解析 HTML 網頁
+   * <code>smtplib</code>：發送郵件
+   * <code>gspread</code>：操作 Google Sheets
+   * <code>oauth2client</code>：處理 Google API 認證
+### Step 2: 撰寫爬蟲程式
+1. **設定環境變數**
+   ```python
+   import os
+   import requests
+   from bs4 import BeautifulSoup
+   import smtplib
+   from email.mime.multipart import MIMEMultipart
+   from email.mime.text import MIMEText
+   import json
+   import gspread
+   from oauth2client.service_account import ServiceAccountCredentials
+   
+   # 讀取環境變數 (從 GitHub Secrets)
+   sender_email = os.environ['SENDER_EMAIL']
+   receiver_email = os.environ['RECEIVER_EMAIL']
+   password = os.environ['GMAIL_PASSWORD']
+   spreadsheet_id = os.environ['SPREADSHEET_ID']
+   
+   # 讀取存於 GitHub Secrets 中的 Google Sheets 憑證 (JSON)
+   credentials_json_str = os.environ['GOOGLE_CREDENTIALS_JSON']
+   credentials_info = json.loads(credentials_json_str)
+   ```
+2. **Google Sheets API 認證**
+   ```python
+      # 設定 Google Sheets API 的認證範圍
+      scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+      creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_info, scope)
+      client = gspread.authorize(creds)
+      
+      # 開啟 Google Sheets 文件
+      sheet = client.open_by_key(spreadsheet_id).sheet1  # 獲取第一個工作表
+   ```
+3. **模擬使用者發出的 HTTP GET 請求，抓取網頁內容，並檢查回應狀態**   
+   使用 <code>requests.get()</code> 向元智大學的首頁發送 HTTP GET 請求，並使用 <code>headers</code> 模擬瀏覽器的請求，以避免網站屏蔽自動爬蟲（某些網站可能會檢查請求頭，來確保訪問者是使用瀏覽器的真實使用者）。<code>url_page</code> 變數則用來保存網站的基礎 URL，以後面用來組合完整的連結。
+   ```python
+      # 模擬使用者發出的 HTTP GET 請求到伺服器端獲取網頁內容
+      headers = {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+      }
+      
+      url = 'https://www.yzu.edu.tw/index.php/tw'
+      url_page = url[:url.find('/', url.find('//') + 2)]
+      
+      # 發送 HTTP GET 請求並獲取伺服器端回應
+      response = requests.get(url, headers=headers)
+      
+      if response.status_code == 200:
+          soup = BeautifulSoup(response.text, 'html.parser')
+      
+          # 找到所有 class 為 'msg-content' 的 div 元素
+          content_divs = soup.find_all('div', class_='msg-content')
+    ```
+4. **公告儲存到 Google Sheet**  
+   確認是否以擷取過該訊息，若無，則將該則公告儲存到 Google Sheet。      
+    ```python
+        email_content = ""
+        if len(sheet.get_all_values()) == 0:
+            sheet.append_row(['Title', 'Link', 'Date'])
+    
+        existing_links = [row[1] for row in sheet.get_all_values() if len(row) > 1]
+    
+        for content_div in content_divs:
+            title_tag = content_div.find('h3').find('a')
+            title = title_tag.text.strip() if title_tag else 'N/A'
+            link = url_page + title_tag['href'] if title_tag and 'href' in title_tag.attrs else 'N/A'
+    
+            if link in existing_links:
+                continue
+    
+            date_tag = content_div.find('div', class_='date')
+            date = date_tag.text.strip() if date_tag else 'N/A'
+    
+            entry = f"Title: {title}\nLink: {link}\nDate: {date}\n\n"
+            email_content += entry
+    
+            sheet.append_row([title, link, date])
+            existing_links.append(link)
+      ```
+5. **寄送郵件通知**  
+   建立郵件內容。    
+      ```python
+          # 寄送郵件通知
+          if email_content:
+              msg = MIMEMultipart()
+              msg['From'] = sender_email
+              msg['To'] = receiver_email
+              msg['Subject'] = '[Run Crawler] 元智大學'
+      
+              msg.attach(MIMEText(email_content, 'plain'))
+      ```
+    透過 SMTP_SSL 發送郵件
+      ```python
+            try:
+                with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                    server.login(sender_email, password)
+                    server.sendmail(sender_email, receiver_email, msg.as_string())
+                    print('郵件已成功寄送')
+            except Exception as e:
+                print(f"Error: 無法寄送郵件 - {e}")
+      ```
+    * <code>smtplib.SMTP_SSL()</code>：透過 Gmail 的 SMTP 伺服器發送郵件，並且使用 SSL 進行加密（Gmail 的 SSL 端口為 465）。
+    * <code>server.login(sender_email, password)</code>：使用 <code>sender_email</code> 和 Gmail 的應用程式密碼進行登入驗證(必須在 Gmail 中啟用了兩步驟驗證，並生成應用程式密碼)。
+    * <code>server.sendmail()</code>：這行程式負責發送郵件，從 <code>sender_email</code> 發送至 <code>receiver_email</code>，並將郵件內容格式化為字串。
+### Step 3: Google Sheets API 設定
+1. 建立 Google Cloud 專案並啟用 Google Sheets API
+   登入 [Google Cloud Console](https://cloud.google.com/cloud-console/?utm_source=google&utm_medium=cpc&utm_campaign=japac-TW-all-zh-dr-BKWS-all-lv-trial-PHR-dr-1605216&utm_content=text-ad-none-none-DEV_c-CRE_622018104156-ADGP_Hybrid+%7C+BKWS+-+BRO+%7C+Txt+-Management+Tools-Cloud+Console-google+cloud+console-main-KWID_43700076521325430-kwd-296393718382&userloc_9197990-network_g&utm_term=KW_google%20cloud%20console&gad_source=1&gclid=EAIaIQobChMI6M-9pbKwigMVhRF7Bx0NkxRWEAAYASAAEgIuDfD_BwE&gclsrc=aw.ds) ，創建一個新專案，並啟用 Google Sheets API 和 Google Drive API，然後在 API 介面建立一個 Service Account，並下載其憑證檔案（JSON）。
+2. 將憑證儲存到 GitHub Secrets
+   為了避免敏感資訊外流，因此將敏感資訊存於 GitHub Secrets:
+   * SENDER_EMAIL：寄件人的 Gmail 帳號
+   * RECEIVER_EMAIL：收件人的 Gmail 帳號
+   * GMAIL_PASSWORD：寄件人的 Gmail 密碼（Google 兩步驟驗證應用程式密碼）
+   * SPREADSHEET_ID：Google Sheets 的 ID（從網址中取得）
+   * GOOGLE_CREDENTIALS_JSON：下載的 Service Account 憑證內容，以字串形式儲存
+### Step 4: 自動化運行爬蟲
+1. 撰寫 GitHub Actions 檔案
+   在專案目錄的 <code>.github/workflows</code> 目錄下，新增一個 <code>.yml</code> 檔案，例如 yzu_web_crawler.yml。(完整程式碼在[yzu_web_crawler.yml](https://github.com/sunnyliuaviation/Yzu_Web_Crawler/blob/main/.github/workflows/yzu_web_crawler.yml))
 ## Secret 使用說明  
-將<code>SENDER_EMAIL</code>、<code>RECEIVER_EMAIL</code>、<code>GMAIL_PASSWORD</code>三個Secrets儲存在GitHub。  
+將<code>SENDER_EMAIL</code>、<code>RECEIVER_EMAIL</code>、<code>GMAIL_PASSWORD</code>等五個 Secrets 儲存在 GitHub。  
 Settings → Secrets and variables → Actions → New repository secret  
 ![image](https://github.com/sunnyliuaviation/Yzu_Web_Crawler/blob/main/image/Action%20Secret.png)  
 Name 填入<code>SENDER_EMAIL</code>, Secret 填入要"傳送"訊息的電子郵件。    
 Name 填入<code>RECEIVER_EMAIL</code>, Secret 填入要"接收"訊息的電子郵件。    
 Name 填入<code>GMAIL_PASSWORD</code>, Secret 填入要傳送訊息電子郵件的密碼。gmail 需開啟兩步驟驗證的應用程式密碼，並將應用程式密碼貼到 Secret。  
 接著按下 Add secret , 完成設定。  
-## 未來研究目標
-使用 Google Sheets 作為資料管理平台，記錄每次擷取的最新消息和公告，以便於查詢和檢索，並將擷取到的資料與 Google Sheets 中已有的數據進行比對，確保系統紀錄入未曾擷取過的資訊，解決收到重複訊息的問題。
 ## 參考資料  
 * [【 Python 爬蟲 】2 小時初學者課程 ：一次學會 PTT 爬蟲、Hahow 爬蟲、Yahoo 電影爬蟲！](https://youtu.be/1PHp1prsxIM?si=YkFFE6DzUZQ8oPwH)  
 * [【python】selenium 網頁自動化、網路爬蟲 ｜ 爬蟲 ｜ python 爬蟲 ｜ 自動化 ｜pycharm ｜](https://youtu.be/ximjGyZ93YQ?si=_wYaRLTHsVZJkxzn)  

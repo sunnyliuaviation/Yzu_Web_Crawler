@@ -160,6 +160,9 @@ Name 填入<code>GMAIL_PASSWORD</code>, Secret 填入要傳送訊息電子郵件
 ## 改善及建議
 1. **資料儲存與查詢優化**: 目前的資料儲存在 Google Sheet 上，這對於小規模的資料管理是有效的。但如果公告數量增加，Google Sheet 的查詢效率可能會下降。日後考慮使用如 Firebase、SQL 等更強大的資料庫進行儲存，以便能有效管理大量數據。
 2. **公告過濾與分類**: 除了目前的爬取公告功能，未來可以加入公告的過濾或分類功能，根據不同的關鍵字、類別來進行篩選。例如，根據公告的標題或內容篩選出學術、課程相關或校內活動等特定類別，可以更快速得到需要的資訊。
+## 待解決的問題
+在公告儲存時，有些連結並沒有轉成超連結，如下圖:  
+![image](https://github.com/sunnyliuaviation/Yzu_Web_Crawler/blob/main/image/Google%20Sheet.png)
 ## 參考資料  
 * [【 Python 爬蟲 】2 小時初學者課程 ：一次學會 PTT 爬蟲、Hahow 爬蟲、Yahoo 電影爬蟲！](https://youtu.be/1PHp1prsxIM?si=YkFFE6DzUZQ8oPwH)  
 * [【python】selenium 網頁自動化、網路爬蟲 ｜ 爬蟲 ｜ python 爬蟲 ｜ 自動化 ｜pycharm ｜](https://youtu.be/ximjGyZ93YQ?si=_wYaRLTHsVZJkxzn)  

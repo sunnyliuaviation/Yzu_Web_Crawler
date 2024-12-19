@@ -167,7 +167,10 @@ Name 填入<code>GMAIL_PASSWORD</code>, Secret 填入要傳送訊息電子郵件
 * [【 Python 爬蟲 】2 小時初學者課程 ：一次學會 PTT 爬蟲、Hahow 爬蟲、Yahoo 電影爬蟲！](https://youtu.be/1PHp1prsxIM?si=YkFFE6DzUZQ8oPwH)  
 * [【python】selenium 網頁自動化、網路爬蟲 ｜ 爬蟲 ｜ python 爬蟲 ｜ 自動化 ｜pycharm ｜](https://youtu.be/ximjGyZ93YQ?si=_wYaRLTHsVZJkxzn)  
 * [Python Email 發送電子郵件 - 基本教學 By 彭彭](https://youtu.be/YQboCnlOb6Y?si=pBur5hFW7SdFT3aI)
-* [GitHub Action YAML 撰寫技巧 - 環境變數(Environment Variables) 與 秘密 (Secrets)](https://ithelp.ithome.com.tw/articles/10263300)  
+* [GitHub Action YAML 撰寫技巧 - 環境變數(Environment Variables) 與 秘密 (Secrets)](https://ithelp.ithome.com.tw/articles/10263300)
+* [串接Google Sheet API 操作試算表運算](https://cde566.medium.com/python-%E4%B8%B2%E6%8E%A5google-sheet-api-%E6%93%8D%E4%BD%9C%E8%A9%A6%E7%AE%97%E8%A1%A8%E9%81%8B%E7%AE%97-507274c56fa8)
+* [Python 讀寫 Google Sheets 教學](https://hackmd.io/@Yun-Cheng/GoogleSheets#%E8%AE%80%E5%8F%96%E6%96%B9%E5%BC%8F)
+* [[Python爬蟲教學]解析如何串接Google Sheet試算表寫入爬取的資料](https://www.learncodewithmike.com/2020/08/python-write-to-google-sheet.html)
 <p align="center">
   <strong>爬蟲資料擷取自<a href="https://www.yzu.edu.tw/index.php/tw/">元智大學</a>官網<strong>
 </p>
